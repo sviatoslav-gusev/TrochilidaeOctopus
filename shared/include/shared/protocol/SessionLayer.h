@@ -20,6 +20,8 @@ namespace gs::protocol {
 
 struct Heartbeat {
     Q_GADGET
+public:
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::Heartbeat;
 
     Q_PROPERTY(MsgHeader header MEMBER header)
 
@@ -29,6 +31,8 @@ struct Heartbeat {
 // Client -> Server
 struct LoginRequest {
     Q_GADGET
+public:
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::LoginRequest;
 
     Q_PROPERTY(MsgHeader header MEMBER header)
 
@@ -38,6 +42,8 @@ struct LoginRequest {
 // Server -> Client
 struct ChallengeRequest {
     Q_GADGET
+public:
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::ChallengeRequest;
 
     Q_PROPERTY(MsgHeader header MEMBER header)
     Q_PROPERTY(QString   nonce  MEMBER nonce)
@@ -49,6 +55,8 @@ struct ChallengeRequest {
 // Client -> Server
 struct ChallengeResponse {
     Q_GADGET
+public:
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::ChallengeResponse;
 
     Q_PROPERTY(MsgHeader header MEMBER header)
     Q_PROPERTY(QString   hash   MEMBER hash)
@@ -60,6 +68,8 @@ struct ChallengeResponse {
 // Server -> Client
 struct LoginResponse {
     Q_GADGET
+public:
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::LoginResponse;
 
     Q_PROPERTY(MsgHeader               header      MEMBER header)
     Q_PROPERTY(enums::ConnectionStatus conn_status MEMBER conn_status)
@@ -67,9 +77,5 @@ struct LoginResponse {
     MsgHeader header{enums::MsgType::LoginResponse};
     enums::ConnectionStatus conn_status{enums::ConnectionStatus::Offline};
 };
-
-// struct LogoutRequest
-
-// struct LogoutResponse
 
 } // namespace gs::protocol

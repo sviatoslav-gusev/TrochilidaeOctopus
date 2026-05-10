@@ -15,12 +15,17 @@ QJsonObject JsonSerializer::SerializeGadget(const QMetaObject* meta_obj,
     for (int i = 0; i < meta_obj->propertyCount(); ++i)
     {
         const QMetaProperty prop = meta_obj->property(i);
-        const QLatin1String key(prop.name()); // All varnames are latin, so QLatin1String.
+        const QMetaType meta_type = prop.metaType();
 
+        const QLatin1String key(prop.name()); // All varnames are latin, so QLatin1String.
         const QVariant value = prop.readOnGadget(gadget_ptr);
 
-        const QMetaObject* const child_meta = value.metaType().metaObject();
-        if (child_meta) {
+        if (meta_type.flags() & QMetaType::IsEnumeration) {
+            // enum -> int
+            json.insert(key, value.toInt());
+        }
+        else if (const QMetaObject* const child_meta = value.metaType().metaObject();
+                 child_meta) {
             // Is value also gadget? Yes, call recursion
             json.insert(key, SerializeGadget(child_meta, value.constData()));
         }
@@ -39,6 +44,8 @@ bool JsonSerializer::DeserializeGadget(const QMetaObject* const meta_obj,
     for (int i = 0; i < meta_obj->propertyCount(); ++i)
     {
         const QMetaProperty prop = meta_obj->property(i);
+        const QMetaType meta_type = prop.metaType();
+
         const QLatin1String key(prop.name());
 
         if (!json.contains(key)) {
@@ -47,10 +54,15 @@ bool JsonSerializer::DeserializeGadget(const QMetaObject* const meta_obj,
         }
 
         const QJsonValue json_value = json.value(key);
-        const QMetaObject* const child_meta = prop.metaType().metaObject();
 
 
-        if (child_meta && json_value.isObject()) {
+        if (meta_type.flags() & QMetaType::IsEnumeration) {
+            // Json as int -> enum
+            prop.writeOnGadget(gadget_ptr, json_value.toInt());
+        }
+        else if (const QMetaObject* const child_meta = prop.metaType().metaObject();
+                 child_meta && json_value.isObject()) {
+
             // Is json_value recursive? Yes, call recursion
 
             // 1. Get gadget copy

@@ -22,7 +22,7 @@ enum class MsgType {
     LogoutResponse,
 
     // --- Telemetry (Client -> Server) ---
-    NetworkMetrics,
+    NetworkMetricsReport,
 
     // --- State Management (Server -> Client) ---
     StatusGetRequest,

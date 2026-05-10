@@ -32,7 +32,7 @@ public:
  */
 template <typename T>
 static QJsonObject ToJson(const T& obj) {
-    // T::staticMetaObject генерируется MOC автоматически для всех Q_GADGET
+    // T::staticMetaObject gens MOC for every Q_GADGET
     return SerializeGadget(&T::staticMetaObject, &obj);
 }
 

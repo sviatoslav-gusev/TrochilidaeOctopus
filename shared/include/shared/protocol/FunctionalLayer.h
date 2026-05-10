@@ -2,17 +2,19 @@
 
 #include "shared/Enums.h"
 #include "shared/protocol/MsgHeader.h"
+#include "shared/protocol/ClientStatus.h"
+#include "shared/protocol/NetworkMetrics.h"
 
 #include <QJsonObject>
 #include <QString>
-
-#include <cstdint>
 
 namespace gs::protocol {
 
 // Client -> Server
 struct Log {
     Q_GADGET
+public:
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::Log;
 
     Q_PROPERTY(MsgHeader header MEMBER header)
     Q_PROPERTY(QString   msg    MEMBER msg)
@@ -22,27 +24,23 @@ struct Log {
 };
 
 // Client -> Server
-struct NetworkMetrics {
+struct NetworkMetricsReport {
     Q_GADGET
+public:
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::NetworkMetricsReport;
 
     Q_PROPERTY(MsgHeader header        MEMBER header)
-    Q_PROPERTY(uint32_t  sent          MEMBER sent)
-    Q_PROPERTY(uint32_t  received      MEMBER received)
-    Q_PROPERTY(double    rcvd_total_ms MEMBER rcvd_total_ms)
-    Q_PROPERTY(int64_t   outliers      MEMBER outliers)
-    Q_PROPERTY(double    jitter        MEMBER jitter)
+    Q_PROPERTY(NetworkMetrics metrics MEMBER metrics)
 
-    MsgHeader header{enums::MsgType::NetworkMetrics};
-    uint32_t sent{0};
-    uint32_t received{0};
-    double received_total_ms{0.0};
-    uint32_t outliers{0};
-    double jitter{0.0};
+    MsgHeader      header{enums::MsgType::NetworkMetricsReport};
+    NetworkMetrics metrics;
 };
 
 // Server -> Client
 struct StatusGetRequest {
     Q_GADGET
+public:
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::StatusGetRequest;
 
     Q_PROPERTY(MsgHeader header MEMBER header)
 
@@ -52,46 +50,40 @@ struct StatusGetRequest {
 // Client -> Server
 struct StatusGetResponse {
     Q_GADGET
+public:
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::StatusGetResponse;
 
-    Q_PROPERTY(MsgHeader            header         MEMBER header)
-    Q_PROPERTY(enums::RunningStatus running_status MEMBER running_status)
-    Q_PROPERTY(enums::ExecStatus    exec_status    MEMBER exec_status)
-    Q_PROPERTY(QString              ping_target    MEMBER ping_target)
+    Q_PROPERTY(MsgHeader      header         MEMBER header)
+    Q_PROPERTY(ClientStatus   client_status  MEMBER client_status)
 
-    MsgHeader            header{enums::MsgType::StatusGetResponse};
-    enums::RunningStatus running_status{enums::RunningStatus::Stopped};
-    enums::ExecStatus    exec_status{enums::ExecStatus::Demo};
-    QString              ping_target;
+    MsgHeader     header{enums::MsgType::StatusGetResponse};
+    ClientStatus  client_status;
 };
 
 // Server -> Client
 struct StatusSetRequest {
     Q_GADGET
+public:
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::StatusSetRequest;
 
-    Q_PROPERTY(MsgHeader            header         MEMBER header)
-    Q_PROPERTY(enums::RunningStatus running_status MEMBER running_status)
-    Q_PROPERTY(enums::ExecStatus    exec_status    MEMBER exec_status)
-    Q_PROPERTY(QString              ping_target    MEMBER ping_target)
+    Q_PROPERTY(MsgHeader      header         MEMBER header)
+    Q_PROPERTY(ClientStatus   client_status  MEMBER client_status)
 
-    MsgHeader            header{enums::MsgType::StatusSetRequest};
-    enums::RunningStatus running_status{enums::RunningStatus::Stopped};
-    enums::ExecStatus    exec_status{enums::ExecStatus::Demo};
-    QString              ping_target;
+    MsgHeader     header{enums::MsgType::StatusSetRequest};
+    ClientStatus  client_status;
 };
 
 // Client -> Server
 struct StatusSetResponse {
     Q_GADGET
+public:
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::StatusSetResponse;
 
     Q_PROPERTY(MsgHeader            header         MEMBER header)
-    Q_PROPERTY(enums::RunningStatus running_status MEMBER running_status)
-    Q_PROPERTY(enums::ExecStatus    exec_status    MEMBER exec_status)
-    Q_PROPERTY(QString              ping_target    MEMBER ping_target)
+    Q_PROPERTY(ClientStatus   client_status  MEMBER client_status)
 
-    MsgHeader            header{enums::MsgType::StatusSetResponse};
-    enums::RunningStatus running_status{enums::RunningStatus::Stopped};
-    enums::ExecStatus    exec_status{enums::ExecStatus::Demo};
-    QString              ping_target;
+    MsgHeader     header{enums::MsgType::StatusSetResponse};
+    ClientStatus  client_status;
 };
 
 } // namespace gs::protocol
