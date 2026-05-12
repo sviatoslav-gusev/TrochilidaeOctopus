@@ -25,29 +25,29 @@ enum class MsgType {
     NetworkMetricsReport,
 
     // --- State Management (Server -> Client) ---
-    StatusGetRequest,
-    StatusGetResponse,
-    StatusSetRequest,
-    StatusSetResponse
+    SettingsGetRequest,
+    SettingsGetResponse,
+    SettingsSetRequest,
+    SettingsSetResponse
 };
 Q_ENUM_NS(MsgType)
 
-enum class ConnectionStatus {
+enum class ConnectionState {
     Offline = 0,
     Online
 };
-Q_ENUM_NS(ConnectionStatus)
+Q_ENUM_NS(ConnectionState)
 
-enum class RunningStatus {
+enum class RunningState {
     Stopped = 0,
     Running
 };
-Q_ENUM_NS(RunningStatus)
+Q_ENUM_NS(RunningState)
 
-enum class ExecStatus {
+enum class ExecMode {
     Demo = 0,
     Ping
 };
-Q_ENUM_NS(ExecStatus)
+Q_ENUM_NS(ExecMode)
 
 } // namespace gs::enums

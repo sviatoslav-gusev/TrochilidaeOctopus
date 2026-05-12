@@ -12,8 +12,8 @@
  *  2. Server gens random string (Nonce). Sends it inside ChallengeRequest.
  *  3. Client gets token, merge it with nonce ans make hash of this pair. Sends in ChallengeResponse.
  *  4. Server calculates same hash too.
- *  5a. Hash is same? Send enums::ConnectionStatus::Online in LoginResponse
- *  5b. Hash differs? Send enums::ConnectionStatus::Offline in LoginResponse
+ *  5a. Hash is same? Send enums::ConnectionState::Online in LoginResponse
+ *  5b. Hash differs? Send enums::ConnectionState::Offline in LoginResponse
  */
 
 namespace gs::protocol {
@@ -71,11 +71,11 @@ struct LoginResponse {
 public:
     static constexpr enums::MsgType TYPE_ID = enums::MsgType::LoginResponse;
 
-    Q_PROPERTY(MsgHeader               header      MEMBER header)
-    Q_PROPERTY(enums::ConnectionStatus conn_status MEMBER conn_status)
+    Q_PROPERTY(MsgHeader              header     MEMBER header)
+    Q_PROPERTY(enums::ConnectionState conn_state MEMBER conn_state)
 
     MsgHeader header{enums::MsgType::LoginResponse};
-    enums::ConnectionStatus conn_status{enums::ConnectionStatus::Offline};
+    enums::ConnectionState conn_state{enums::ConnectionState::Offline};
 };
 
 } // namespace gs::protocol

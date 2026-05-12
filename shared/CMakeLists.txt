@@ -5,7 +5,7 @@ add_library(SharedLib STATIC
     include/shared/Enums.h
 
     include/shared/protocol/MsgHeader.h
-    include/shared/protocol/ClientStatus.h
+    include/shared/protocol/ClientSettings.h
     include/shared/protocol/NetworkMetrics.h
 
     include/shared/protocol/SessionLayer.h
@@ -15,6 +15,10 @@ add_library(SharedLib STATIC
 
     include/shared/JsonPacketStreamer.h
     src/JsonPacketStreamer.cpp
+
+    include/shared/CryptoHelper.h
+    include/shared/SeqNums.h
+    include/shared/ConceptTraits.h
 )
 
 # headers for outer usage

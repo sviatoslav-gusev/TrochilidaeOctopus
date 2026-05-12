@@ -2,7 +2,7 @@
 
 #include "shared/Enums.h"
 #include "shared/protocol/MsgHeader.h"
-#include "shared/protocol/ClientStatus.h"
+#include "shared/protocol/ClientSettings.h"
 #include "shared/protocol/NetworkMetrics.h"
 
 #include <QJsonObject>
@@ -37,53 +37,53 @@ public:
 };
 
 // Server -> Client
-struct StatusGetRequest {
+struct SettingsGetRequest {
     Q_GADGET
 public:
-    static constexpr enums::MsgType TYPE_ID = enums::MsgType::StatusGetRequest;
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::SettingsGetRequest;
 
     Q_PROPERTY(MsgHeader header MEMBER header)
 
-    MsgHeader header{enums::MsgType::StatusGetRequest};
+    MsgHeader header{enums::MsgType::SettingsGetRequest};
 };
 
 // Client -> Server
-struct StatusGetResponse {
+struct SettingsGetResponse {
     Q_GADGET
 public:
-    static constexpr enums::MsgType TYPE_ID = enums::MsgType::StatusGetResponse;
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::SettingsGetResponse;
 
-    Q_PROPERTY(MsgHeader      header         MEMBER header)
-    Q_PROPERTY(ClientStatus   client_status  MEMBER client_status)
+    Q_PROPERTY(MsgHeader      header          MEMBER header)
+    Q_PROPERTY(ClientSettings client_settings MEMBER client_settings)
 
-    MsgHeader     header{enums::MsgType::StatusGetResponse};
-    ClientStatus  client_status;
+    MsgHeader      header{enums::MsgType::SettingsGetResponse};
+    ClientSettings client_settings;
 };
 
 // Server -> Client
-struct StatusSetRequest {
+struct SettingsSetRequest {
     Q_GADGET
 public:
-    static constexpr enums::MsgType TYPE_ID = enums::MsgType::StatusSetRequest;
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::SettingsSetRequest;
 
-    Q_PROPERTY(MsgHeader      header         MEMBER header)
-    Q_PROPERTY(ClientStatus   client_status  MEMBER client_status)
+    Q_PROPERTY(MsgHeader      header          MEMBER header)
+    Q_PROPERTY(ClientSettings client_settings MEMBER client_settings)
 
-    MsgHeader     header{enums::MsgType::StatusSetRequest};
-    ClientStatus  client_status;
+    MsgHeader      header{enums::MsgType::SettingsSetRequest};
+    ClientSettings client_settings;
 };
 
 // Client -> Server
-struct StatusSetResponse {
+struct SettingsSetResponse {
     Q_GADGET
 public:
-    static constexpr enums::MsgType TYPE_ID = enums::MsgType::StatusSetResponse;
+    static constexpr enums::MsgType TYPE_ID = enums::MsgType::SettingsSetResponse;
 
-    Q_PROPERTY(MsgHeader            header         MEMBER header)
-    Q_PROPERTY(ClientStatus   client_status  MEMBER client_status)
+    Q_PROPERTY(MsgHeader      header          MEMBER header)
+    Q_PROPERTY(ClientSettings client_settings MEMBER client_settings)
 
-    MsgHeader     header{enums::MsgType::StatusSetResponse};
-    ClientStatus  client_status;
+    MsgHeader      header{enums::MsgType::SettingsSetResponse};
+    ClientSettings client_settings;
 };
 
 } // namespace gs::protocol

@@ -24,10 +24,10 @@ using AllMessages = std::variant<
 
     gs::protocol::NetworkMetricsReport,
 
-    gs::protocol::StatusGetRequest,
-    gs::protocol::StatusGetResponse,
-    gs::protocol::StatusSetRequest,
-    gs::protocol::StatusSetResponse
+    gs::protocol::SettingsGetRequest,
+    gs::protocol::SettingsGetResponse,
+    gs::protocol::SettingsSetRequest,
+    gs::protocol::SettingsSetResponse
 
     // Add all new message types here too!
     >;
