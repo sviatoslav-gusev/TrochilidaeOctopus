@@ -1,6 +1,6 @@
 #include "client/AppClient.h"
 
-#include "shared/MessageDispatcher.h"
+#include "shared/MsgDispatcher.h"
 #include "shared/CryptoHelper.h"
 
 #include "client/engines/DemoPingEngine.h"
@@ -26,16 +26,23 @@ AppClient::AppClient(const CredsStorage & credentials, QObject* parent)
     // Bind socket signals
     connect(m_socket, &QTcpSocket::connected, this, &AppClient::onConnected);
     connect(m_socket, &QTcpSocket::disconnected, this, &AppClient::onDisconnected);
-    connect(m_socket, &QTcpSocket::errorOccurred, this, [this](QAbstractSocket::SocketError err)
+    connect(m_socket, &QTcpSocket::errorOccurred, this,
+            [this](QAbstractSocket::SocketError err)
     {
         qWarning() << "[Network] Socket error:" << m_socket->errorString();
-        // This error -> disconnected -> reconnect will run by itself
+
+        if (m_socket->state() == QAbstractSocket::UnconnectedState) {
+            if (!m_reconnect_timer->isActive()) {
+                m_reconnect_timer->start();
+            }
+        }
     });
 
     m_telemetry_timer = new QTimer(this);
     m_telemetry_timer->setInterval(10000);
     connect(m_telemetry_timer, &QTimer::timeout, this, &AppClient::SendTelemetryReport);
 
+    m_reconnect_timer->start();
     TryConnect();
 }
 
@@ -62,7 +69,7 @@ void AppClient::onConnected() {
     connect(m_streamer, &gs::network::JsonPacketStreamer::jsonReceived,
             this, [this](const QJsonObject& json)
     {
-        helpers::MessageDispatcher::Dispatch(json, [this](const traits::WithHeader auto& msg)
+        helpers::MsgDispatcher::Dispatch(json, [this](const traits::WithHeader auto& msg)
         {
             // SeqNum validation for all but Heartbeat
             if (msg.header.type != gs::enums::MsgType::Heartbeat)
@@ -76,7 +83,7 @@ void AppClient::onConnected() {
                 ++m_seq_nums.expected_rx_seq;
             }
 
-            this->HandleMessage(msg); // Бизнес-логика
+            this->HandleMessage(msg); // Functional logic
         });
     });
 
@@ -88,7 +95,7 @@ void AppClient::onConnected() {
 void AppClient::onDisconnected() {
     qWarning() << "[Network] Disconnected! Starting reconnect timer...";
     m_heartbeat_timer->stop();
-    m_reconnect_timer->start(); // Снова пытаемся пробиться к серверу
+    m_reconnect_timer->start(); // Try reconnect again
 }
 
 void AppClient::HandleMessage(const protocol::ChallengeRequest& msg) {
@@ -137,8 +144,6 @@ void AppClient::ApplySettings() {
         return;
     }
 
-    // --- Пересоздаем движок, если сменился режим (Demo / Real) ---
-    // Пока у нас есть только DemoPingEngine, но архитектура уже готова для Real
     if (!m_engine || m_settings.exec_mode != m_engine->ExecMode()) {
 
         if (m_engine) { m_engine->deleteLater(); }
@@ -214,7 +219,6 @@ void AppClient::onPingResult(bool success, double roundtrip_ms) {
 
         // Jitter (delta between prev and current roundtrip)
         if (m_last_roundtrip_ms >= 0.0) {
-            // Берем модуль разницы между текущим и прошлым пингом
             const double diff = std::abs(roundtrip_ms - m_last_roundtrip_ms);
             m_current_metrics.total_jitter_ms += diff;
             ++m_current_metrics.n_jitters;

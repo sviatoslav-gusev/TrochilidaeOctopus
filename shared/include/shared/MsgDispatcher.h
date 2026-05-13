@@ -32,7 +32,7 @@ using AllMessages = std::variant<
     // Add all new message types here too!
     >;
 
-class MessageDispatcher {
+class MsgDispatcher {
 public:
     // Dispatch: Json -> visitor(msg_type_instance);
     template <typename Visitor>

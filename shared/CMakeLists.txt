@@ -11,7 +11,7 @@ add_library(SharedLib STATIC
     include/shared/protocol/SessionLayer.h
     include/shared/protocol/FunctionalLayer.h
 
-    include/shared/MessageDispatcher.h
+    include/shared/MsgDispatcher.h
 
     include/shared/JsonPacketStreamer.h
     src/JsonPacketStreamer.cpp

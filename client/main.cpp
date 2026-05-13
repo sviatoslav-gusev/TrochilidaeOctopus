@@ -8,6 +8,9 @@
 #include "client/CredsStorage.h"
 
 int main(int argc, char *argv[]) {
+    qSetMessagePattern("[%{time hh:mm:ss.zzz}] %{message}");
+    //qSetMessagePattern("[%{time hh:mm:ss.zzz}] %{function} - %{message}");
+
     QCoreApplication app(argc, argv);
     app.setOrganizationName("ExperimentalConnectivitySolutions");
     app.setApplicationName("OctopusClient");

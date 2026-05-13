@@ -4,7 +4,7 @@
 #include <QTimer>
 
 #include "shared/JsonPacketStreamer.h"
-#include "shared/MessageDispatcher.h"
+#include "shared/MsgDispatcher.h"
 #include "shared/protocol/SessionLayer.h"
 
 using namespace gs::protocol;
@@ -23,7 +23,7 @@ public:
         {
             qDebug().noquote() << "\n[RAW JSON] ->" << QJsonDocument(json).toJson(QJsonDocument::Compact);
 
-            gs::helpers::MessageDispatcher::Dispatch(json, [this](const auto& msg)
+            gs::helpers::MsgDispatcher::Dispatch(json, [this](const auto& msg)
             {
                 this->HandleMessage(msg);
             });
