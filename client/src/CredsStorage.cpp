@@ -1,7 +1,13 @@
 #include "client/CredsStorage.h"
 #include <QDebug>
+#include <QDir>
+#include <QStandardPaths>
 
 namespace gs::client {
+
+CredsStorage::CredsStorage()
+    : m_settings(GetSettingsPath(), QSettings::IniFormat)
+{}
 
 bool CredsStorage::LoadCreds(QCoreApplication& app) {
     // Try load
@@ -19,8 +25,14 @@ bool CredsStorage::LoadCreds(QCoreApplication& app) {
     parser.process(app);
 
     bool cli_override = false;
-    if (parser.isSet(id_option))    { cli_override = true; SetClientID(parser.value(id_option).toUInt()); }
-    if (parser.isSet(token_option)) { cli_override = true; SetToken(parser.value(token_option)); }
+    if (parser.isSet(id_option)) {
+        cli_override = true;
+        SetClientID(parser.value(id_option).toUInt());
+    }
+    if (parser.isSet(token_option)) {
+        cli_override = true;
+        SetToken(parser.value(token_option));
+    }
 
     // Validate
     if (!IsValid()) {
@@ -33,6 +45,12 @@ bool CredsStorage::LoadCreds(QCoreApplication& app) {
     }
 
     return true;
+}
+
+QString CredsStorage::GetSettingsPath() {
+    const QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir().mkpath(path);
+    return path + "/settings.ini";
 }
 
 bool CredsStorage::LoadFromSettings() {
@@ -51,7 +69,7 @@ bool CredsStorage::LoadFromSettings() {
     return IsValid();
 }
 
-void CredsStorage::SaveToSettings() {
+void CredsStorage::SaveToSettings() {   
     m_settings.beginGroup(CREDS);
 
     m_settings.setValue(CL_ID, m_client_id);

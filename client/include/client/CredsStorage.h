@@ -9,7 +9,7 @@ namespace gs::client {
 class CredsStorage {
 
 public:
-    CredsStorage() = default;
+    CredsStorage();
 
     bool LoadCreds(QCoreApplication& app);
 
@@ -17,6 +17,8 @@ public:
     QString Token() const { return m_token; }
 
 private:
+    static QString GetSettingsPath();
+
     bool LoadFromSettings();
     void SaveToSettings();
 
@@ -29,8 +31,8 @@ private:
     constexpr static QLatin1StringView CL_ID{"client_id"};
     constexpr static QLatin1StringView TOKEN{"token"};
 
-    uint32_t m_client_id;
-    QString  m_token;
+    uint32_t  m_client_id;
+    QString   m_token;
     QSettings m_settings;
 };
 
