@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QJsonObject>
+#include <QString>
 
 #include <cstdint>
 
@@ -26,6 +27,18 @@ public:
     uint32_t n_jitters{0};
 
     bool operator==(const NetworkMetrics&) const = default;
+
+    QString ToString() const {
+        return QString("Pings: %1/%2 | RTT: %3 ms | Jitter: %4 ms")
+                       .arg(received)
+                       .arg(sent)
+                       .arg(received
+                            ? rcvd_total_ms / received
+                            : 0.0, 0, 'f', 1)
+                       .arg(n_jitters
+                            ? total_jitter_ms / n_jitters
+                            : 0.0, 0, 'f', 1);
+    }
 };
 
 } // namespace gs::protocol

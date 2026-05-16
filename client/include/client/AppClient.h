@@ -23,7 +23,7 @@ public:
 
 private slots:
     void TryConnect();
-    void SendTelemetryReport();
+    void SendMetricsReport();
     void ApplySettings();
 
     void onConnected();
@@ -65,8 +65,9 @@ private:
 
     const QString ADDRESS = "127.0.0.1";
     static constexpr int PORT = 12345;
-    static constexpr int RECONNECT_INTERVAL = 5000;
-    static constexpr int HEARTBEAT_INTERVAL = 2000;
+    static constexpr int RECONNECT_INTERVAL_MS = 5000;
+    static constexpr int HEARTBEAT_INTERVAL_MS = 2000;
+    static constexpr int FALLBACK_METRICS_REPORT_INTERVAL_MS = 10000;
 
     QTcpSocket* m_socket;
     network::JsonPacketStreamer* m_streamer{nullptr};
@@ -80,7 +81,7 @@ private:
     network::SeqNums m_seq_nums;
 
     engines::AbstractPingEngine* m_engine{nullptr};
-    QTimer* m_telemetry_timer;
+    QTimer* m_metrics_report_timer;
     protocol::NetworkMetrics m_current_metrics;
     double m_last_roundtrip_ms{-1.0};
 };

@@ -1,7 +1,7 @@
-project(client)
+project(OctopusClient)
 
-add_executable(client
-    main.cpp
+add_executable(OctopusClient
+    src/main.cpp
 
     include/client/AppClient.h
     src/AppClient.cpp
@@ -18,7 +18,7 @@ target_include_directories(SharedLib PUBLIC
     include
 )
 
-target_link_libraries(client PRIVATE
+target_link_libraries(OctopusClient PRIVATE
     SharedLib
     Qt6::Core
     Qt6::Network

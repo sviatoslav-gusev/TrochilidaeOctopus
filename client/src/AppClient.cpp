@@ -15,12 +15,12 @@ AppClient::AppClient(const CredsStorage & credentials, QObject* parent)
 
     // Try to reconnect each RECONNECT_INTERVAL ms if no online
     m_reconnect_timer = new QTimer(this);
-    m_reconnect_timer->setInterval(RECONNECT_INTERVAL);
+    m_reconnect_timer->setInterval(RECONNECT_INTERVAL_MS);
     connect(m_reconnect_timer, &QTimer::timeout, this, &AppClient::TryConnect);
 
     // Heartbeating each HEARTBEAT_INTERVAL ms if online
     m_heartbeat_timer = new QTimer(this);
-    m_heartbeat_timer->setInterval(HEARTBEAT_INTERVAL);
+    m_heartbeat_timer->setInterval(HEARTBEAT_INTERVAL_MS);
     connect(m_heartbeat_timer, &QTimer::timeout, this, &AppClient::SendHeartbeat);
 
     // Bind socket signals
@@ -38,9 +38,9 @@ AppClient::AppClient(const CredsStorage & credentials, QObject* parent)
         }
     });
 
-    m_telemetry_timer = new QTimer(this);
-    m_telemetry_timer->setInterval(10000);
-    connect(m_telemetry_timer, &QTimer::timeout, this, &AppClient::SendTelemetryReport);
+    m_metrics_report_timer = new QTimer(this);
+    m_metrics_report_timer->setInterval(FALLBACK_METRICS_REPORT_INTERVAL_MS);
+    connect(m_metrics_report_timer, &QTimer::timeout, this, &AppClient::SendMetricsReport);
 
     m_reconnect_timer->start();
     TryConnect();
@@ -94,6 +94,14 @@ void AppClient::onConnected() {
 
 void AppClient::onDisconnected() {
     qWarning() << "[Network] Disconnected! Starting reconnect timer...";
+
+    if (m_engine) {
+        m_engine->Stop();
+        m_engine->deleteLater();
+        m_engine = nullptr;
+    }
+
+    m_metrics_report_timer->stop();
     m_heartbeat_timer->stop();
     m_reconnect_timer->start(); // Try reconnect again
 }
@@ -110,6 +118,13 @@ void AppClient::HandleMessage(const protocol::LoginResponse& msg) {
     if (msg.conn_state == gs::enums::ConnectionState::Online) {
         qInfo() << "[Auth] SUCCESS! We are online.";
         m_heartbeat_timer->start();
+        if (m_settings.running_state == enums::RunningState::Running) {
+            qInfo() << "[Auth] RunningState::Running. Exploring metrics...";
+        }
+        else {
+            qInfo() << "[Auth] RunningState::Stopped. "
+                       "Waiting for server instructions (SettingsSetRequest)...";
+        }
     } else {
         qCritical() << "[Auth] REJECTED by server. Invalid id/token?";
         m_socket->disconnectFromHost();
@@ -125,10 +140,15 @@ void AppClient::HandleMessage(const protocol::SettingsGetRequest& msg) {
 }
 
 void AppClient::HandleMessage(const protocol::SettingsSetRequest& msg) {
-    qInfo() << "[Settings] Server updated settings. Target:" << msg.client_settings.ping_target;
 
-    m_settings = msg.client_settings;
-    if (m_settings.ping_timeout_ms > 5000) { m_settings.ping_timeout_ms = 5000; }
+    if (m_settings != msg.client_settings) {
+        qInfo().noquote() << "[Settings] Server updated settings." << msg.client_settings.ToString();
+
+        m_settings = msg.client_settings;
+        if (m_settings.ping_timeout_ms > 5000) { m_settings.ping_timeout_ms = 5000; }
+
+        ApplySettings();
+    }
 
     // Send actual condition
     protocol::SettingsSetResponse resp;
@@ -137,17 +157,24 @@ void AppClient::HandleMessage(const protocol::SettingsSetRequest& msg) {
 }
 
 void AppClient::ApplySettings() {
-    // Server required to stop activity
-    if (m_settings.running_state == enums::RunningState::Stopped) {
-        if (m_engine) { m_engine->Stop(); }
-        m_telemetry_timer->stop();
+    qInfo().noquote() << "[Settings] Applying new settings." << m_settings.ToString();
+
+    m_metrics_report_timer->stop();
+
+    // Prepare to use updated logic
+    if (m_engine) {
+        m_engine->Stop();
+        m_engine->deleteLater();
+        m_engine = nullptr;
+    }
+
+    if (m_settings.running_state == gs::enums::RunningState::Stopped) {
+        qInfo() << "[Settings] State is Stopped. Halting engine.";
         return;
     }
 
-    if (!m_engine || m_settings.exec_mode != m_engine->ExecMode()) {
-
-        if (m_engine) { m_engine->deleteLater(); }
-
+    if (!m_engine || m_settings.exec_mode != m_engine->ExecMode())
+    {
         switch (m_settings.exec_mode) {
         // TODO: Uncomment at RealPingEngine
         // case enums::ExecMode::Ping: {
@@ -165,41 +192,27 @@ void AppClient::ApplySettings() {
         }
         }
 
-        connect(m_engine, &engines::AbstractPingEngine::pingResult, this, &AppClient::onPingResult);
+        connect(m_engine, &engines::AbstractPingEngine::pingResult,
+                this, &AppClient::onPingResult);
     }
 
-    m_engine->SetTarget(m_settings.ping_target);
+    m_engine->SetTarget(m_settings.target);
     m_engine->SetTimeout(m_settings.ping_timeout_ms);
-
     m_engine->Start();
-    m_telemetry_timer->start();
+
+    m_metrics_report_timer->setInterval(m_settings.metrics_report_interval_s * 1000);
+    m_metrics_report_timer->start();
 }
 
-void AppClient::SendTelemetryReport() {
+void AppClient::SendMetricsReport() {
     protocol::NetworkMetricsReport report;
     report.metrics = m_current_metrics;
     SendMessage(report);
 
-
     // Just some beauty for cli output
-    double avg_ping = 0.0;
-    double avg_jitter = 0.0;
+    qInfo().noquote() << "[Metrics] Sent." << m_current_metrics.ToString();
 
-    if (m_current_metrics.received > 0) {
-        avg_ping = m_current_metrics.rcvd_total_ms / m_current_metrics.received;
-    }
-
-    if (m_current_metrics.n_jitters > 0) {
-        avg_jitter = m_current_metrics.total_jitter_ms / m_current_metrics.n_jitters;
-    }
-
-    qInfo().noquote() << QString("[Telemetry] Sent. Pings: %1/%2 | Avg RTT: %3 ms | Jitter: %4 ms")
-                             .arg(m_current_metrics.received)
-                             .arg(m_current_metrics.sent)
-                             .arg(avg_ping, 0, 'f', 1)
-                             .arg(avg_jitter, 0, 'f', 1);
-
-    // Reset for next report window
+    // Reset for next metrics report window
     m_current_metrics = protocol::NetworkMetrics();
 
     // Still keep m_last_roundtrip_ms to make reports seamless
