@@ -1,0 +1,43 @@
+<div align="center">
+
+<img width="120" alt="изображение" src="https://github.com/user-attachments/assets/16915f2a-dfc2-4f88-aa9f-5da29c96c635" />
+
+
+#  TrochilidaeOctopus
+
+
+
+Clients gather telemetry to targets.
+Server has total control on them.
+
+QML6 / C++20 / SQLite
+</div>
+
+## Features:
+1. Multilayer data aggregation (Raw → 10 min → Hour → Day → Week) with compacting approach.
+
+2. Model-View-Controller based server UI.
+3. Custom protocol with Challenge/Response handshake.
+4. Sequence number based protection. Hearbeats (implemented, but not used yet). Automatic reconnection.
+5. Shared libs with isolated protocol, serialisation, dispatching, streamer.
+6. On-demand extra data loading.
+7. Transactions in SQLite for atomic data managent.
+8. Strategy-pattern interface to switch ping engines at clients.
+9. Server has full control on clients. 
+10. C++20 features like concept, named arguments, using enum etc.
+11. Demo mode with data flow simulation.
+12. Rich logging system.
+
+## TODO:
+1. ICMP-engine to collect real telemetry.
+2. systemd service wrapping.
+3. Move logs inside GUI.
+4. Unit tests.
+5. Adjust GUI design
+6. Adjust compacting logic.
+   
+<img width="1002" height="756" alt="изображение" src="https://github.com/user-attachments/assets/a2bf1455-4413-49d5-992a-71a3d5744843" />
+<img width="1303" height="495" alt="изображение" src="https://github.com/user-attachments/assets/026232ff-d193-42cb-b86d-987b8681be30" />
+<img width="1258" height="552" alt="изображение" src="https://github.com/user-attachments/assets/6947e496-e67e-4219-954d-3f1f33dc6fe9" />
+
+
