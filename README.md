@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="120" alt="изображение" src="https://github.com/user-attachments/assets/16915f2a-dfc2-4f88-aa9f-5da29c96c635" />
+<img width="150" alt="изображение" src="https://github.com/user-attachments/assets/16915f2a-dfc2-4f88-aa9f-5da29c96c635" />
 
 
 #  TrochilidaeOctopus
