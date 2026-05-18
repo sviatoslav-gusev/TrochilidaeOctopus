@@ -7,8 +7,8 @@
 
 
 
-Clients gather telemetry to targets.
-Server has total control on them.
+Clients gather telemetry of targets.<br/>
+Server has total control on clients.
 
 QML6 / C++20 / SQLite
 </div>
