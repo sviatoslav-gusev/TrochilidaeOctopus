@@ -1,169 +1,335 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Controls.Material // Подключаем Material Design
+import QtQuick.Controls.Material
 import QtQuick.Layouts
 import gs.OctopusServer 1.0
 
 ApplicationWindow {
+    id: window
     visible: true
-    width: 850
-    height: 600
+    minimumWidth: 1000
+    width: 1000
+    height: 650
     title: "Octopus Server Community Edition"
 
-    // 1. Включаем темную тему на уровне всего приложения
     Material.theme: Material.Dark
-    Material.accent: Material.Teal // Цвет акцентов (чекбоксы, фокусы)
-
-    // Цвет самого заднего фона окна (очень темный серый)
+    Material.accent: Material.Teal
     color: "#1e1e1e"
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 20 // Даем немного воздуха по краям
+        anchors.margins: 20
         spacing: 15
 
-        // --- ВЕРХНЯЯ ПАНЕЛЬ С КНОПКАМИ ---
+        // --- Header panel with buttons ---
         RowLayout {
-            Layout.fillWidth: true
-            spacing: 12
+                    Layout.fillWidth: true
+                    spacing: 12
 
-            Button {
-                text: "Add Client"
-                Material.background: "#2d2d30"
-                onClicked: appServer.addDummyClient()
-            }
-            Button {
-                text: "Mass Start"
-                Material.background: "#2e7d32" // Насыщенный зеленый
-                Material.foreground: "white"
-                font.bold: true
-                onClicked: appServer.massStart()
-            }
-            Button {
-                text: "Mass Stop"
-                Material.background: "#c62828" // Насыщенный красный
-                Material.foreground: "white"
-                font.bold: true
-                onClicked: appServer.massStop()
-            }
+                    Button {
+                        text: "Add Client"
+                        Layout.preferredHeight: 36
+                        contentItem: Label { text: parent.text; color: "white";
+                            font.bold: true; verticalAlignment: Text.AlignVCenter }
+                        background: Rectangle {
+                            color: parent.down ? "#222224" : (parent.hovered ? "#3e3e42" : "#2d2d30")
+                            border.color: "#434346"
+                            radius: 0 // СТРОГИЙ НУЛЕВОЙ РАДИУС
+                        }
+                        onClicked: editorDialog.openEditor({})
+                    }
+                    Button {
+                        text: "Mass Start"
+                        Layout.preferredHeight: 36
+                        contentItem: Label { text: parent.text; color: "white";
+                            font.bold: true; verticalAlignment: Text.AlignVCenter }
+                        background: Rectangle {
+                            color: parent.down ? "#1b5e20" : (parent.hovered ? "#2e7d32" : "#1b5e20")
+                            radius: 0
+                        }
+                        onClicked: appServer.massStart()
+                    }
+                    Button {
+                        text: "Mass Stop"
+                        Layout.preferredHeight: 36
+                        contentItem: Label { text: parent.text; color: "white";
+                            font.bold: true; verticalAlignment: Text.AlignVCenter }
+                        background: Rectangle {
+                            color: parent.down ? "#b71c1c" : (parent.hovered ? "#c62828" : "#b71c1c")
+                            radius: 0
+                        }
+                        onClicked: appServer.massStop()
+                    }
+                    Item { Layout.fillWidth: true }
+                }
 
-            // Пружина, которая прижмет кнопки влево
-            Item { Layout.fillWidth: true }
-        }
-
-        // --- КОНТЕЙНЕР ТАБЛИЦЫ ---
+        // --- Tab header ---
         Rectangle {
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            color: "#252526" // Цвет подложки таблицы
-            radius: 8        // Закругленные углы
-            border.color: "#3e3e42"
-            border.width: 1
-            clip: true       // Обрезаем всё, что вылезает за закругления
+            height: 35
+            color: "#252526"
+            radius: 4
 
-            ColumnLayout {
+            RowLayout {
                 anchors.fill: parent
-                spacing: 0
+                anchors.leftMargin: 15
+                anchors.rightMargin: 15
+                spacing: 10
 
-                // 2. КАСТОМНЫЙ ЗАГОЛОВОК ТАБЛИЦЫ
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 45
-                    color: "#2d2d30"
+                Label { text: "ID"; font.bold: true; Layout.preferredWidth: 50 }
+                Label { text: "Client name"; font.bold: true; Layout.preferredWidth: 150 }
+                Label { text: "Ping target"; font.bold: true; Layout.preferredWidth: 130 }
+                Label { text: "Exec mode"; font.bold: true; Layout.preferredWidth: 110 }
+                Label { text: "Run state"; font.bold: true; Layout.preferredWidth: 110 }
+                Label { text: "Connection"; font.bold: true; Layout.preferredWidth: 110 }
+                Label { text: "Current RTT"; font.bold: true; Layout.fillWidth: true }
+            }
+        }
 
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 20
-                        Label { text: "ID"; Layout.preferredWidth: 50; font.bold: true; color: "#aaaaaa" }
-                        Label { text: "CLIENT NAME"; Layout.preferredWidth: 200; font.bold: true; color: "#aaaaaa" }
-                        Label { text: "STATUS"; Layout.preferredWidth: 120; font.bold: true; color: "#aaaaaa" }
-                        Label { text: "RTT (ms)"; Layout.preferredWidth: 100; font.bold: true; color: "#aaaaaa" }
+        // --- CLIENTS TABLE ---
+        ListView {
+            id: clientsListView
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            model: clientsModel
+            spacing: 6
+            clip: true
+
+            delegate: Rectangle {
+                id: rowContainer
+                width: clientsListView.width
+
+                // Dynamic expansion height
+                height: isExpanded ? 220 : 45
+                color: index % 2 === 0 ? "#1a1a1a" : "#222224"
+                radius: 4
+                border.color: isExpanded ? Material.accentColor : "transparent"
+                border.width: isExpanded ? 1 : 0
+
+                // Inner line state
+                property bool isExpanded: false
+                property var historyData: null
+
+                // Refreshing history
+                function refreshHistory() {
+                    if (isExpanded) {
+                        rowContainer.historyData = appServer.getClientSummaryMetrics(model.client_id)
                     }
                 }
 
-                // Тонкая линия под заголовком
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 1
-                    color: "#3e3e42"
+                // Smooth line expansion
+                Behavior on height {
+                    NumberAnimation { duration: 200; easing.type: Easing.InOutQuad }
                 }
 
-                // 3. САМА ТАБЛИЦА (СПИСОК)
-                ListView {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    model: clientsModel
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds // Убираем пружинящий эффект macOS/iOS
+                // REALTIME UPDATES (on opened panel)
+                Timer {
+                    interval: 5000 // request updates each 5 sec
+                    running: rowContainer.isExpanded
+                    repeat: true
+                    onTriggered: rowContainer.refreshHistory()
+                }
 
-                    delegate: Rectangle {
-                        width: ListView.view.width
-                        height: 45
+                // Open/close expanded panel by mouse click
+                MouseArea {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 45
+                    cursorShape: Qt.PointingHandCursor
 
-                        // Эффект "Зебры": четные строки темнее, нечетные прозрачные
-                        color: index % 2 === 0 ? "transparent" : "#2a2a2b"
+                    onClicked: {
+                        rowContainer.isExpanded = !rowContainer.isExpanded
+                        rowContainer.refreshHistory()
+                    }
+                }
 
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 10
+
+                    // --- CLIENT MAIN LINE ---
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 25
+                        spacing: 10
+
+                        Label { text: "#" + model.client_id; color: "#858585"; Layout.preferredWidth: 50 }
+                        Label { text: model.client_name; font.bold: true; Layout.preferredWidth: 150 }
+                        Label { text: model.target; Layout.preferredWidth: 130 }
+
+                        Label {
+                            text: model.exec_mode === 0 ? "Demo" : "ICMP"
+                            Layout.preferredWidth: 110
+                            color: "#00bcd4"
+                        }
+
+                        Label {
+                            text: model.running_state === 0 ? "Stopped" : "Running"
+                            Layout.preferredWidth: 110
+                            color: "#00bcd4"
+                        }
+
+                        // Connection state (Online/Offline)
                         RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 20
-                            spacing: 0
-
-                            // ID
-                            Label {
-                                text: model.client_id
-                                Layout.preferredWidth: 50
-                                color: "#d4d4d4"
-                                font.pixelSize: 14
+                            Layout.preferredWidth: 110
+                            spacing: 6
+                            Rectangle {
+                                width: 8; height: 8; radius: 4
+                                color: model.conn_state === 1 ? "#4caf50" : "#f44336"
                             }
-
-                            // Имя (выделяем синим, как переменные в IDE)
                             Label {
-                                text: model.client_name
-                                Layout.preferredWidth: 200
-                                color: "#569cd6"
-                                font.pixelSize: 14
-                                font.bold: true
-                            }
-
-                            // Блок Статуса (Кружок + Текст)
-                            RowLayout {
-                                Layout.preferredWidth: 120
-                                spacing: 8
-
-                                Rectangle {
-                                    width: 12; height: 12; radius: 6
-                                    color: model.conn_state === Enums.ConnectionState.Online ? "#4caf50" : "#f44336"
-                                    // Легкое свечение (бордер чуть светлее самого цвета)
-                                    border.color: Qt.lighter(color, 1.5)
-                                    border.width: 1
-                                }
-                                Label {
-                                    text: model.conn_state === Enums.ConnectionState.Online ? "Online" : "Offline"
-                                    color: model.conn_state === Enums.ConnectionState.Online ? "#4caf50" : "#f44336"
-                                    font.pixelSize: 13
-                                }
-                            }
-
-                            // Пинг (Меняет цвет, если слишком высокий)
-                            Label {
-                                text: model.avg_roundtrip_ms.toFixed(1)
-                                Layout.preferredWidth: 100
-                                // Если пинг больше 100, красим в оранжевый предупреждающий
-                                color: model.avg_roundtrip_ms > 100 ? "#ff9800" : "#d4d4d4"
-                                font.pixelSize: 14
+                                text: model.conn_state === 1 ? "Online" : "Offline"
+                                color: model.conn_state === 1 ? "#4caf50" : "#f44336"
                             }
                         }
 
-                        // 4. ЭФФЕКТ НАВЕДЕНИЯ МЫШКИ (Hover)
-                        MouseArea {
+                        // Live ping from model
+                        Label {
+                            text: model.avg_roundtrip_ms.toFixed(1) + " ms"
+                            color: model.avg_roundtrip_ms > 100 ? "#ff9800" : "#d4d4d4"
+                            font.pixelSize: 14
+                            Layout.fillWidth: true
+                        }
+
+                        // Line edit button
+                        Button {
+                            text: "Edit"
+                            Layout.preferredWidth: 60
+                            Layout.preferredHeight: 28
+
+                            contentItem: Label {
+                                text: parent.text;
+                                color: "#e0e0e0";
+                                font.pixelSize: 12;
+                                font.bold: true;
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle {
+                                color: parent.down ? "#222224" : (parent.hovered ? "#434346" : "#333337")
+                                border.color: "#555557"
+                                radius: 0
+                            }
+
+                            onClicked: {
+                                editorDialog.openEditor({
+                                    "client_id": model.client_id,
+                                    "client_name": model.client_name,
+                                    "target": model.target,
+                                    "token": model.token,
+                                    "exec_mode": model.exec_mode,
+                                    "running_state": model.running_state,
+                                    "ping_timeout_ms": model.ping_timeout_ms,
+                                    "metrics_report_interval_s": model.metrics_report_interval_s
+                                })
+                            }
+                        }
+
+                        // Open/close arrow
+                        Label {
+                            text: rowContainer.isExpanded ? "▲" : "▼"
+                            color: "#858585"
+                            font.pixelSize: 12
+                            Layout.rightMargin: 10
+                        }
+                    }
+
+                    // --- EXPANDED HISTPRY (GRID) ---
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        color: "#111112"
+                        radius: 4
+                        visible: rowContainer.height > 60 // Hide elems on closure
+                        opacity: rowContainer.isExpanded ? 1.0 : 0.0
+
+                        Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                        GridLayout {
                             anchors.fill: parent
-                            hoverEnabled: true
-                            onEntered: parent.color = "#333333"
-                            onExited: parent.color = index % 2 === 0 ? "transparent" : "#2a2a2b"
+                            anchors.margins: 12
+                            columns: 5
+                            rowSpacing: 6
+                            columnSpacing: 20
+
+                            // Title
+                            Label { text: "Period"; font.bold: true; color: Material.accentColor }
+                            Label { text: "Avg RTT"; font.bold: true; color: Material.accentColor }
+                            Label { text: "Jitter"; font.bold: true; color: Material.accentColor }
+                            Label { text: "Losses"; font.bold: true; color: Material.accentColor }
+                            Label { text: "Packets sent"; font.bold: true; color: Material.accentColor }
+
+                            Label { text: "Raw client probe"; font.bold: true }
+                            Label { text: model.avg_roundtrip_ms.toFixed(1) + " ms" }
+                            Label { text: model.avg_jitter_ms.toFixed(1) + " ms" }
+                            Label { text: model.loss_percentage.toFixed(1) + "%" }
+                            Label { text: model.sent_count }
+
+                            Label { text: "Last 10 mins" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["10mins"]
+                                          ? rowContainer.historyData["10mins"]["rtt"].toFixed(1) + " ms"
+                                          : "—" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["10mins"]
+                                          ? rowContainer.historyData["10mins"]["jitter"].toFixed(1) + " ms"
+                                          : "—" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["10mins"]
+                                          ? rowContainer.historyData["10mins"]["loss"].toFixed(1) + "%"
+                                          : "0" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["10mins"]
+                                          ? rowContainer.historyData["10mins"]["sent"]
+                                          : "0" }
+
+                            Label { text: "Last hour" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["hour"]
+                                          ? rowContainer.historyData["hour"]["rtt"].toFixed(1) + " ms"
+                                          : "—" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["hour"]
+                                          ? rowContainer.historyData["hour"]["jitter"].toFixed(1) + " ms"
+                                          : "—" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["hour"]
+                                          ? rowContainer.historyData["hour"]["loss"].toFixed(1) + "%"
+                                          : "0" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["hour"]
+                                          ? rowContainer.historyData["hour"]["sent"]
+                                          : "0" }
+
+                            Label { text: "Last day" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["day"]
+                                          ? rowContainer.historyData["day"]["rtt"].toFixed(1) + " ms"
+                                          : "—" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["day"]
+                                          ? rowContainer.historyData["day"]["jitter"].toFixed(1) + " ms"
+                                          : "—" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["day"]
+                                          ? rowContainer.historyData["day"]["loss"].toFixed(1) + "%"
+                                          : "0" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["day"]
+                                          ? rowContainer.historyData["day"]["sent"]
+                                          : "0" }
+
+                            Label { text: "Last week" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["week"]
+                                          ? rowContainer.historyData["week"]["rtt"].toFixed(1) + " ms"
+                                          : "—" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["week"]
+                                          ? rowContainer.historyData["week"]["jitter"].toFixed(1) + " ms"
+                                          : "—" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["week"]
+                                          ? rowContainer.historyData["week"]["loss"].toFixed(1) + "%"
+                                          : "0" }
+                            Label { text: rowContainer.historyData && rowContainer.historyData["week"]
+                                          ? rowContainer.historyData["week"]["sent"]
+                                          : "0" }
                         }
                     }
                 }
             }
         }
+    }
+
+    ClientEditorDialog {
+        id: editorDialog
     }
 }

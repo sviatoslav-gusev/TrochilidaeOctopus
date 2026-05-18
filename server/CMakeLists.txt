@@ -1,4 +1,4 @@
-project(OctopusServer)
+project(OctopusServer VERSION 0.9)
 
 find_package(Qt6 REQUIRED COMPONENTS
     Core
@@ -13,7 +13,6 @@ qt_add_executable(OctopusServer)
 
 qt_add_qml_module(OctopusServer
     URI gs.OctopusServer
-    VERSION 1.0
     SOURCES
         src/main.cpp
 
@@ -29,8 +28,12 @@ qt_add_qml_module(OctopusServer
         include/server/models/ClientsModel.h
         src/models/ClientsModel.cpp
 
+        include/server/Enums.h
+        src/Enums.cpp
+
     QML_FILES
         src/ui/Main.qml
+        QML_FILES src/ui/ClientEditorDialog.qml
 )
 
 target_include_directories(SharedLib PUBLIC

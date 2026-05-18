@@ -23,7 +23,9 @@ ClientSession::ClientSession(QTcpSocket* socket, models::ClientsModel* model, QO
 void ClientSession::PushRunningState(gs::enums::RunningState new_state) {
     if (!m_authorized) return;
 
-    const std::optional<const models::ClientItem> client_item = m_model->GetClient(m_client_id);
+    const std::optional<const models::ClientItem> client_item
+        = m_model->GetClient(m_client_id);
+
     if (client_item.has_value()) {
         protocol::SettingsSetRequest set_req;
         set_req.client_settings = client_item->ToClientSettings();
@@ -33,6 +35,24 @@ void ClientSession::PushRunningState(gs::enums::RunningState new_state) {
         SendMessage(set_req);
         qInfo().nospace()
             << "[Session " << m_client_id << "] Pushed new state" << new_state;
+    }
+}
+
+void ClientSession::PushCurrentSettings()
+{
+    if (!m_authorized) { return; }
+
+    const std::optional<const models::ClientItem> client_item = m_model->GetClient(m_client_id);
+
+    if (client_item.has_value()) {
+        protocol::SettingsSetRequest set_req;
+        set_req.client_settings = client_item->ToClientSettings();
+
+        SendMessage(set_req);
+
+        qInfo().noquote() << QString("[Session %1] Hot-reloaded settings sent to client: %2")
+                                 .arg(m_client_id)
+                                 .arg(set_req.client_settings.ToString());
     }
 }
 
@@ -97,7 +117,7 @@ void ClientSession::HandleMessage(const protocol::SettingsSetResponse& msg)
 
     client_item->UpdateClientSettings(msg.client_settings);
 
-    qInfo().nospace()
+    qInfo().nospace().noquote()
         << "[Client "<< msg.header.client_id << "] applied new settings. "
         << msg.client_settings.ToString();
 }
@@ -113,7 +133,9 @@ void ClientSession::HandleMessage(const protocol::ChallengeResponse& msg) {
         m_model->SetConnectionState(m_client_id, enums::ConnectionState::Online);
 
         // Send initial setup for client
-        const std::optional<const models::ClientItem> client_item = m_model->GetClient(m_client_id);
+        const std::optional<const models::ClientItem> client_item
+            = m_model->GetClient(m_client_id);
+
         if (client_item.has_value()) {
             protocol::SettingsSetRequest set_req;
             set_req.client_settings = client_item->ToClientSettings();
@@ -144,6 +166,33 @@ void ClientSession::HandleMessage(const protocol::Heartbeat& msg) {
 void ClientSession::HandleMessage(const protocol::NetworkMetricsReport& msg) {
     qInfo().nospace().noquote()
         << "[Metrics " << m_client_id << "] " << msg.metrics.ToString();
+
+    const double rtt_ms = msg.metrics.received
+                        ? msg.metrics.rcvd_total_ms / msg.metrics.received
+                        : 0.0;
+    const double jitter_ms = msg.metrics.n_jitters
+                           ? msg.metrics.total_jitter_ms / msg.metrics.n_jitters
+                           : 0.0;
+    const double lost_prc = msg.metrics.sent
+                          ? (1.0 - (double(msg.metrics.received) / msg.metrics.sent)) * 100
+                          : 0.0;
+
+    m_model->UpdateMetrics(m_client_id, rtt_ms, jitter_ms, lost_prc, msg.metrics.sent);
+
+    // 2. Save to DB for history
+    const std::optional<models::ClientItem> client_item
+        = m_model->GetClient(m_client_id);
+
+    if (client_item.has_value()) {
+        DatabaseManager::instance().InsertRawMetrics(
+            m_client_id,
+            client_item->exec_mode,
+            rtt_ms,
+            jitter_ms,
+            msg.metrics.sent,
+            msg.metrics.received
+            );
+    }
 }
 
 } // namespace gs::server

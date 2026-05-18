@@ -21,6 +21,18 @@ void ClientItem::UpdateClientSettings(const gs::protocol::ClientSettings & setti
     metrics_report_interval_s = settings.metrics_report_interval_s;
 }
 
+void ClientsModel::MassUpdateRunningState(gs::enums::RunningState state) {
+    if (m_clients.isEmpty()) { return; }
+
+    // Change state for each client in our models memory
+    for (ClientItem & client : m_clients) {
+        client.running_state = state;
+    }
+
+    // QML: Redraw RunRole for all table!
+    emit dataChanged(index(0), index(m_clients.size() - 1), {RunRole});
+}
+
 ClientsModel::ClientsModel(QObject *parent)
     : QAbstractListModel(parent)
 {}
@@ -60,6 +72,7 @@ QVariant ClientsModel::data(const QModelIndex &index, int role) const
     case RoundtripRole: return client.avg_roundtrip_ms;
     case JitterRole:    return client.avg_jitter_ms;
     case LossPercRole:  return client.loss_percentage;
+    case SentRole:      return client.sent_count;
     default:            return QVariant();
     }
 }
@@ -84,6 +97,8 @@ QHash<int, QByteArray> ClientsModel::roleNames() const
     roles[RoundtripRole]= "avg_roundtrip_ms";
     roles[JitterRole]   = "avg_jitter_ms";
     roles[LossPercRole] = "loss_percentage";
+    roles[SentRole]     = "sent_count";
+
     return roles;
 }
 
@@ -123,14 +138,16 @@ void ClientsModel::SetConnectionState(uint32_t client_id,
 }
 
 void ClientsModel::UpdateMetrics(uint32_t client_id, double roundtrip_ms,
-                                 double jitter_ms, double loss_percentage)
+                                 double jitter_ms, double loss_percentage,
+                                 uint32_t sent_count)
 {
     const int idx = FindClientIndex(client_id);
     if (idx >= 0) {
         m_clients[idx].avg_roundtrip_ms = roundtrip_ms;
         m_clients[idx].avg_jitter_ms = jitter_ms;
-        m_clients[idx].loss_percentage = loss_percentage;          // Redraw 3 cells
-        emit dataChanged(index(idx), index(idx), {RoundtripRole, JitterRole, LossPercRole});
+        m_clients[idx].loss_percentage = loss_percentage;
+        m_clients[idx].sent_count = sent_count;                                 // Redraw 4 cells
+        emit dataChanged(index(idx), index(idx), {RoundtripRole, JitterRole, LossPercRole, SentRole});
     }
 }
 

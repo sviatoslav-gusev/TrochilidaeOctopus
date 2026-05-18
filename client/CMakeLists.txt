@@ -1,4 +1,4 @@
-project(OctopusClient)
+project(OctopusClient VERSION 0.9)
 
 add_executable(OctopusClient
     src/main.cpp

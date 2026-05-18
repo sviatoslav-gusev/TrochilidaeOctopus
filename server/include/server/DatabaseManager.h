@@ -1,6 +1,9 @@
 #pragma once
-#include <QSqlDatabase>
+
+#include "server/Enums.h"
 #include "shared/Enums.h"
+
+#include <QSqlDatabase>
 
 namespace gs::server {
 
@@ -27,9 +30,21 @@ public:
     QList<ClientInfo> GetAllClients();
 
     QString GetTokenForClient(uint32_t client_id);
-    bool AddClient(const ClientInfo & client_info);
-    bool ClearAllData();
+    [[deprecated]] bool AddClient(const ClientInfo & client_info);
+    uint32_t UpsertClient(const ClientInfo & client_info);
+    void DeleteClient(uint32_t client_id);
+    [[deprecated]] bool ClearAllData();
+
+    void CompactMetrics();
+    bool InsertRawMetrics(uint32_t client_id, enums::ExecMode mode,
+                          double roundtrip_ms, double jitter_ms,
+                          int sent_count, int received_count);
+    QVariantMap GetClientSummaryMetrics(uint32_t client_id);
+
 private:
+    void CompactResolutionLevel(enums::MetricsResolution from_res,
+                                enums::MetricsResolution to_res,
+                                qint64 current_time_s);
     DatabaseManager() = default;
 
     bool ValidateTables();

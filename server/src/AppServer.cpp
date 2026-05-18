@@ -2,12 +2,25 @@
 
 #include "server/DatabaseManager.h"
 
+#include <QTimer>
+#include <QSqlQuery>
+#include <QSqlError>
+
 namespace gs::server {
 
 AppServer::AppServer(QObject* parent)
     : QTcpServer(parent)
 {
     LoadClientsFromDB();
+
+
+    QTimer* const compactor_timer = new QTimer(this);
+    connect(compactor_timer, &QTimer::timeout, this, []()
+    {
+        DatabaseManager::instance().CompactMetrics();
+        qInfo() << "[DB] Metrics compaction loop executed.";
+    });
+    compactor_timer->start(30 * 1000);
 }
 
 bool AppServer::StartServer(uint16_t port) {
@@ -65,16 +78,37 @@ void AppServer::onSessionClosed(ClientSession* session) {
 
 void AppServer::massStart() {
     qInfo() << "[AppServer] UI command: MASS START triggered!";
+
+    QSqlQuery query;
+    query.prepare("UPDATE clients SET run_state = :state");
+    query.bindValue(":state", static_cast<int>(gs::enums::RunningState::Running));
+    if (!query.exec()) {
+        qCritical() << "[DB] Mass start update failed:" << query.lastError().text();
+    }
+
     for (ClientSession* const session : std::as_const(m_sessions)) {
         session->PushRunningState(gs::enums::RunningState::Running);
     }
+
+    m_model.MassUpdateRunningState(gs::enums::RunningState::Running);
 }
 
 void AppServer::massStop() {
     qInfo() << "[AppServer] UI command: MASS STOP triggered!";
+
+    // DB
+    QSqlQuery query;
+    query.prepare("UPDATE clients SET run_state = :state");
+    query.bindValue(":state", static_cast<int>(gs::enums::RunningState::Stopped));
+    query.exec();
+
+    // Network/client
     for (ClientSession* const session : std::as_const(m_sessions)) {
         session->PushRunningState(gs::enums::RunningState::Stopped);
     }
+
+    // UI
+    m_model.MassUpdateRunningState(gs::enums::RunningState::Stopped);
 }
 
 void AppServer::addDummyClient() {
@@ -88,6 +122,83 @@ void AppServer::addDummyClient() {
     item.conn_state = enums::ConnectionState::Offline;
 
     m_model.AddOrUpdateClient(item);
+}
+
+QVariantMap AppServer::getClientSummaryMetrics(uint32_t client_id) {
+    return DatabaseManager::instance().GetClientSummaryMetrics(client_id);
+}
+
+QString AppServer::generateToken() {
+    return QUuid::createUuid().toString(QUuid::WithoutBraces);
+}
+
+void AppServer::saveClient(const QVariantMap& clientData) {
+
+    // Parse data from QML
+    gs::server::ClientInfo info;
+    info.client_id = clientData["client_id"].toUInt(); // 0 если новый
+    info.client_name = clientData["client_name"].toString();
+    info.target = clientData["target"].toString();
+    info.token = clientData["token"].toString();
+    info.exec_mode = static_cast<gs::enums::ExecMode>(clientData["exec_mode"].toInt());
+    info.run_state = static_cast<gs::enums::RunningState>(clientData["run_state"].toInt());
+    info.ping_timeout_ms = clientData["ping_timeout_ms"].toUInt();
+    info.metrics_report_interval_s = clientData["metrics_report_interval_s"].toUInt();
+
+    // 1. Save to DB. If id == 0, there is new client. UpsertClient handle both
+    uint32_t final_id = DatabaseManager::instance().UpsertClient(info);
+
+    // 2. Update model for UI
+    models::ClientItem item;
+    item.client_id = final_id;
+    item.client_name = info.client_name;
+    item.target = info.target;
+    item.token = info.token;
+    item.exec_mode = info.exec_mode;
+    item.running_state = info.run_state;
+    item.ping_timeout_ms = info.ping_timeout_ms;
+    item.metrics_report_interval_s = info.metrics_report_interval_s;
+
+    // Keep metrics if existing
+    if (const std::optional<models::ClientItem> existing = m_model.GetClient(final_id))
+    {
+        item.conn_state = existing->conn_state;
+        item.avg_roundtrip_ms = existing->avg_roundtrip_ms;
+        item.avg_jitter_ms = existing->avg_jitter_ms;
+        item.loss_percentage = existing->loss_percentage;
+        item.sent_count = existing->sent_count;
+
+    }
+
+    m_model.AddOrUpdateClient(item);
+
+    // 3. Send fresh setup to client if online
+    if (item.conn_state == enums::ConnectionState::Offline) {
+        return;
+    }
+
+    protocol::SettingsSetRequest set_req;
+    set_req.client_settings = item.ToClientSettings();
+    for (ClientSession* const session : std::as_const(m_sessions))
+    {
+        if (session->ClientID() == final_id) {
+            session->PushCurrentSettings();
+            break;
+        }
+    }
+}
+
+void AppServer::deleteClient(uint32_t client_id) {
+    DatabaseManager::instance().DeleteClient(client_id);
+    m_model.RemoveClient(client_id);
+
+    for (ClientSession* const session : std::as_const(m_sessions))
+    {
+        if (session->ClientID() == client_id) {
+            onSessionClosed(session);
+            break;
+        }
+    }
 }
 
 } // namespace gs::server

@@ -26,6 +26,7 @@ struct ClientItem {
     double avg_roundtrip_ms{0.0};
     double avg_jitter_ms{0.0};
     double loss_percentage{0.0};
+    uint32_t sent_count{0};
 
     gs::protocol::ClientSettings ToClientSettings() const;
     void UpdateClientSettings(const gs::protocol::ClientSettings & settings);
@@ -50,7 +51,8 @@ public:
 
         RoundtripRole,
         JitterRole,
-        LossPercRole
+        LossPercRole,
+        SentRole
     };
 
     explicit ClientsModel(QObject *parent = nullptr);
@@ -64,9 +66,9 @@ public:
     void AddOrUpdateClient(const ClientItem& client);
     void SetConnectionState(uint32_t client_id, gs::enums::ConnectionState conn_state);
     void UpdateMetrics(uint32_t client_id, double roundtrip_ms,
-                       double jitter_ms, double loss_percentage);
+                       double jitter_ms, double loss_percentage, uint32_t sent_count);
     void RemoveClient(uint32_t client_id);
-
+    void MassUpdateRunningState(gs::enums::RunningState state);
 private:
     QList<ClientItem> m_clients;
     QHash<uint32_t, int> m_client_id_to_index;

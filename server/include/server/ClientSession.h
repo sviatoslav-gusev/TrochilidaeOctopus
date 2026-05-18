@@ -24,7 +24,7 @@ public:
     bool IsAuthorized() const { return m_authorized; }
 
     void PushRunningState(gs::enums::RunningState new_state);
-
+    void PushCurrentSettings();
 signals:
     // Signal for AppServer to session removal
     void sessionClosed(gs::server::ClientSession* session);
