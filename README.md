@@ -13,6 +13,15 @@ Server has total control on clients.
 QML6 / C++20 / SQLite
 </div>
 
+## How to
+1. Run `OctopusServer.exe`.
+2. Press `Add client`. Copy ID and Token. Press `Save`.
+3. Open cli and run app  `./OctopusClient.exe -i <ID> -t <Token>`<br/>
+   ID and token are cached, so use simply `./OctopusClient.exe` at next runs.<br/>
+   You can use run with args again to override credentials.
+5. Voila! Connection will be established.<br/>
+   Settings of both Client and Server are located at `%APPDATA%/ExperimentalConnectivitySolutions/`
+
 ## Features:
 1. Multilayer data aggregation (Raw → 10 min → Hour → Day → Week) with compacting approach.
 
