@@ -22,7 +22,7 @@ QML6 / C++20 / SQLite
 5. Voila! Connection will be established.<br/>
    Settings of both Client and Server are located at `%APPDATA%/ExperimentalConnectivitySolutions/`
 
-## Features:
+## Features
 1. Multilayer data aggregation (Raw → 10 min → Hour → Day → Week) with compacting approach.
 
 2. Model-View-Controller based server UI.
@@ -38,7 +38,7 @@ QML6 / C++20 / SQLite
 12. Demo mode with data flow simulation.
 13. Rich logging system.
 
-## TODO:
+## TODO
 1. ICMP-engine to collect real telemetry.
 2. systemd service wrapping.
 3. Move logs inside GUI.
