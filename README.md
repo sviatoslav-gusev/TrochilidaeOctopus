@@ -17,16 +17,17 @@ QML6 / C++20 / SQLite
 1. Multilayer data aggregation (Raw → 10 min → Hour → Day → Week) with compacting approach.
 
 2. Model-View-Controller based server UI.
-3. Custom protocol with Challenge/Response handshake.
-4. Sequence number based protection. Hearbeats (implemented, but not used yet). Automatic reconnection.
-5. Shared libs with isolated protocol, serialisation, dispatching, streamer.
-6. On-demand extra data loading.
-7. Transactions in SQLite for atomic data managent.
-8. Strategy-pattern interface to switch ping engines at clients.
-9. Server has full control on clients. 
-10. C++20 features like concept, named arguments, using enum etc.
-11. Demo mode with data flow simulation.
-12. Rich logging system.
+3. Cliens configuration both .ini and CLI-args ways.
+4. Custom protocol with Challenge/Response handshake.
+5. Sequence number based protection. Hearbeats (implemented, but not used yet). Automatic reconnection.
+6. Shared libs with isolated protocol, serialisation, dispatching, streamer.
+7. On-demand extra data loading.
+8. Transactions in SQLite for atomic data managent.
+9. Strategy-pattern interface to switch ping engines at clients.
+10. Server has full control on clients. 
+11. C++20 features like concept, named arguments, using enum etc.
+12. Demo mode with data flow simulation.
+13. Rich logging system.
 
 ## TODO:
 1. ICMP-engine to collect real telemetry.
