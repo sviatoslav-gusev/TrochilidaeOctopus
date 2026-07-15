@@ -39,6 +39,9 @@ QML6 / C++20 / SQLite
 13. Rich logging system.
 
 ## TODO
+0. Solve problem with static IP requiement for server by splitting server app into 2 apps:
+   * True-server cli-app with logic to be runned at remote server with static IP. Wrapping into service.
+   * Frontended client app to access server (and manage another clients on devices).
 1. ICMP-engine to collect real telemetry.
 2. systemd service wrapping.
 3. Move logs inside GUI.
